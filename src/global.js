@@ -29,6 +29,11 @@ function verifyToken(req, res, next) {
         const bearer = bearerHeader.split(' ');
         const bearerToken = bearer[1];
         req.token = bearerToken;
+
+        if (req.token == myenv.OTHER_APP_TOKEN) {
+            next();
+            return;
+        }
         try {
             var decoded = jwt.verify(req.token, SECRET);
             con.query(`SELECT id FROM user WHERE id = "${decoded.id}";`, function (err2, rows) {
@@ -46,6 +51,29 @@ function verifyToken(req, res, next) {
     }
 }
 
+function get_id_with_token(req, res) {
+    try {
+        var decoded = jwt.verify(req.token, SECRET);
+        return (decoded.id);
+    } catch (err) {
+        res.status(403).json({ msg: "Token is not valid" });
+    }
+    return (-1);
+}
+
+function verifyAuth(req, res, verifId) {
+    if (req.token === myenv.OTHER_APP_TOKEN)
+        return true;
+
+    if (verifId) {
+        let token_id = get_id_with_token(req, res);
+        if (token_id === -1)
+            return false;
+        return token_id === req.params.id;
+    }
+    return false;
+}
+
 function is_num(id) {
     return (/^\d+$/.test(id));
 }
@@ -59,4 +87,5 @@ exports.bcrypt = bcrypt;
 exports.mysql = mysql;
 exports.jwt = jwt;
 exports.verifyToken = verifyToken;
+exports.verifyAuth = verifyAuth
 exports.is_num = is_num;
