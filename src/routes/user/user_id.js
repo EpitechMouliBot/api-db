@@ -1,7 +1,7 @@
 var glob = require('../../global');
 
 module.exports = async function(app, con) {
-    app.get("/user/:id", glob.verifyToken, async (req, res) => {
+    app.get("/user/id/:id", glob.verifyToken, async (req, res) => {
         if (!glob.verifyAuth(req, res, true)) {
             !res.headersSent ? res.status(403).json({ msg: "Authorization denied" }) : 0;
             return;
@@ -16,7 +16,7 @@ module.exports = async function(app, con) {
         });
     });
 
-    app.put("/user/:id", glob.verifyToken, async (req, res) => {
+    app.put("/user/id/:id", glob.verifyToken, async (req, res) => {
         if (!glob.is_num(req.params.id)) {
             res.status(400).json({ msg: "Bad parameter" });
             return;
@@ -79,7 +79,7 @@ module.exports = async function(app, con) {
             res.status(400).json({ msg: "Bad parameter" });
     });
 
-    app.delete("/user/:id", glob.verifyToken, async (req, res) => {
+    app.delete("/user/id/:id", glob.verifyToken, async (req, res) => {
         if (!glob.is_num(req.params.id)) {
             res.status(400).json({ msg: "Bad parameter" });
             return;
