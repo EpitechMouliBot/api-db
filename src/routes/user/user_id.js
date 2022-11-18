@@ -37,6 +37,37 @@ module.exports = async function(app, con) {
             });
             ret = true;
         }
+        if (req.body.hasOwnProperty('server_id')) {
+            con.query(`UPDATE user SET server_id = "${req.body.server_id}" WHERE id = "${req.params.id}";`, function (err, result) {
+                if (err) res.status(500).json({ msg: "Internal server error" });
+            });
+            ret = true;
+        }
+        if (req.body.hasOwnProperty('channel_id')) {
+            con.query(`UPDATE user SET channel_id = "${req.body.channel_id}" WHERE id = "${req.params.id}";`, function (err, result) {
+                if (err) res.status(500).json({ msg: "Internal server error" });
+            });
+            ret = true;
+        }
+        if (req.body.hasOwnProperty('last_testRunId')) {
+            con.query(`UPDATE user SET last_testRunId = "${req.body.last_testRunId}" WHERE id = "${req.params.id}";`, function (err, result) {
+                if (err) res.status(500).json({ msg: "Internal server error" });
+            });
+            ret = true;
+        }
+        if (req.body.hasOwnProperty('cookies_status')) {
+            con.query(`UPDATE user SET cookies_status = "${req.body.cookies_status}" WHERE id = "${req.params.id}";`, function (err, result) {
+                if (err) res.status(500).json({ msg: "Internal server error" });
+            });
+            ret = true;
+        }
+        if (req.body.hasOwnProperty('cookies')) {
+            con.query(`UPDATE user SET cookies = "${req.body.cookies}" WHERE id = "${req.params.id}";`, function (err, result) {
+                if (err) res.status(500).json({ msg: "Internal server error" });
+            });
+            ret = true;
+        }
+
         if (ret == true) {
             con.query(`SELECT * FROM user WHERE id = "${req.params.id}";`, function (err, rows) {
                 if (err) res.status(500).json({ msg: "Internal server error" });
