@@ -30,7 +30,7 @@ function verifyToken(req, res, next) {
         const bearerToken = bearer[1];
         req.token = bearerToken;
 
-        if (req.token == myenv.OTHER_APP_TOKEN) {
+        if (req.token === myenv.OTHER_APP_TOKEN) {
             next();
             return;
         }

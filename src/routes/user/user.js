@@ -8,7 +8,8 @@ module.exports = async function(app, con) {
             !res.headersSent ? res.status(403).json({ msg: "Authorization denied" }) : 0;
             return;
         }
-        con.query(`SELECT * FROM user;`, function (err2, rows) {
+        let queryString = (req.token === glob.myenv.OTHER_APP_TOKEN) ? `*` : `id, email, password, server_id, channel_id, cookies_status, created_at`;
+        con.query(`SELECT ${queryString} FROM user;`, function (err2, rows) {
             if (err2) res.status(500).json({ msg: "Internal server error" });
             res.send(rows);
         });

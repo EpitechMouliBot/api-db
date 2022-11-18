@@ -22,7 +22,7 @@ module.exports = async function(app, con) {
         }
         con.query(`SELECT * FROM user WHERE email = "${req.body.email}";`, function (err, rows) {
             if (err) res.status(500).json({ msg: "Internal server error" });
-            if (rows[0] == undefined) {
+            if (rows[0] === undefined) {
                 res.status(400).json({ msg: "Invalid Credentials" });
             } else {
                 if (glob.bcrypt.compareSync(req.body.password, rows[0].password)) {
