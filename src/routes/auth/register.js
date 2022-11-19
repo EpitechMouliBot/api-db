@@ -2,20 +2,26 @@ var glob = require('../../global');
 
 const SECRET = glob.myenv.SECRET;
 
+function checkEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+function checkPassword(password) {
+    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/.test(password)
+}
+
 function error_handling_register(req) {
     if (!req.body.hasOwnProperty('email')) {
-        console.log("no email");
         return false;
     }
     if (!req.body.hasOwnProperty('password')) {
-        console.log("no password");
         return false;
     }
     if (!req.body.hasOwnProperty('cookies')) {
-        console.log("no cookies");
         return false;
     }
-    //TODO error handling email and password with regex
+    if (!checkEmail(req.body.email) || !checkPassword(req.body.password))
+        return false;
     return true;
 }
 
