@@ -27,7 +27,7 @@ module.exports = async function(app, con) {
             } else {
                 if (glob.bcrypt.compareSync(req.body.password, rows[0].password)) {
                     var token = glob.jwt.sign({ id: `${rows[0].id}` }, SECRET, { expiresIn: '24h' });
-                    res.status(201).json({token: token});
+                    res.status(201).json({token: token, id: rows[0].id});
                 } else
                     res.status(400).json({ msg: "Invalid Credentials" });
             }

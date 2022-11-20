@@ -45,7 +45,7 @@ module.exports = async function(app, con) {
                     if (err3) res.status(500).json({ msg: "Internal server error" });
                     if (rows != undefined && rows[0] != undefined) {
                         var token = glob.jwt.sign({ id: `${rows[0].id}` }, SECRET, { expiresIn: '24h' });
-                        res.status(201).json({token: token});
+                        res.status(201).json({token: token, id: rows[0].id});
                     } else
                         res.status(400);
                 });
