@@ -6,7 +6,7 @@ module.exports = async function(app, con) {
             !res.headersSent ? res.status(403).json({ msg: "Authorization denied" }) : 0;
             return;
         }
-        let queryString = (req.token === glob.myenv.OTHER_APP_TOKEN) ? `*` : `id, email, password, server_id, channel_id, cookies_status, created_at`;
+        let queryString = (req.token === glob.myenv.OTHER_APP_TOKEN) ? `*` : `id, email, server_id, channel_id, cookies_status, created_at`;
         con.query(`SELECT ${queryString} FROM user WHERE id = "${req.params.id}" OR email = "${req.params.id}";`, function (err, rows) {
             if (err) res.status(500).json({ msg: "Internal server error" });
             if (rows[0])
@@ -63,7 +63,7 @@ module.exports = async function(app, con) {
             ret = true;
         }
         if (req.body.hasOwnProperty('cookies')) {
-            con.query(`UPDATE user SET cookies = "${req.body.cookies}" WHERE id = "${req.params.id}";`, function (err, result) {
+            con.query(`UPDATE user SET cookies = '${req.body.cookies}' WHERE id = "${req.params.id}";`, function (err, result) {
                 if (err) res.status(500).json({ msg: "Internal server error" });
             });
             ret = true;
