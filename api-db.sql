@@ -12,7 +12,7 @@ CREATE TABLE `user` (
     `channel_id` VARCHAR(30) NOT NULL DEFAULT "0",
     `last_testRunId` INT unsigned NOT NULL DEFAULT 0,
     `cookies_status` ENUM('new', 'ok', 'expired', 'wait') NOT NULL DEFAULT 'new',
-    `active` BOOLEAN NOT NULL DEFAULT 1,
+    `discord_status` BOOLEAN NOT NULL DEFAULT 0,
     `cookies` LONGTEXT NOT NULL,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
