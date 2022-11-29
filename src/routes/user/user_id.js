@@ -6,7 +6,7 @@ module.exports = async function(app, con) {
             !res.headersSent ? res.status(403).json({ msg: "Authorization denied" }) : 0;
             return;
         }
-        let queryString = (req.token === glob.myenv.OTHER_APP_TOKEN) ? `*` : `id, email, server_id, channel_id, cookies_status, created_at`;
+        let queryString = (req.token === glob.myenv.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, created_at`;
         con.query(`SELECT ${queryString} FROM user WHERE id = "${req.params.id}" OR email = "${req.params.id}";`, function (err, rows) {
             if (err) res.status(500).json({ msg: "Internal server error" });
             if (rows[0])
@@ -38,8 +38,8 @@ module.exports = async function(app, con) {
             });
             ret = true;
         }
-        if (req.body.hasOwnProperty('server_id')) {
-            con.query(`UPDATE user SET server_id = "${req.body.server_id}" WHERE id = "${req.params.id}";`, function (err, result) {
+        if (req.body.hasOwnProperty('user_id')) {
+            con.query(`UPDATE user SET user_id = "${req.body.user_id}" WHERE id = "${req.params.id}";`, function (err, result) {
                 if (err) res.status(500).json({ msg: "Internal server error" });
             });
             ret = true;
@@ -70,7 +70,7 @@ module.exports = async function(app, con) {
         }
 
         if (ret === true) {
-            let queryString = (req.token === glob.myenv.OTHER_APP_TOKEN) ? "*" : "id, email, password, server_id, channel_id, cookies_status, created_at";
+            let queryString = (req.token === glob.myenv.OTHER_APP_TOKEN) ? "*" : "id, email, password, user_id, channel_id, cookies_status, created_at";
             con.query(`SELECT ${queryString} FROM user WHERE id = "${req.params.id}";`, function (err, rows) {
                 if (err) res.status(500).json({ msg: "Internal server error" });
                 res.status(200).send(rows);
