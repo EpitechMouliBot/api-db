@@ -1,4 +1,4 @@
-var glob = require('../../global');
+const glob = require('../../global');
 
 module.exports = async function(app, con) {
     app.get("/user/id/:id", glob.verifyToken, async (req, res) => {
@@ -6,7 +6,7 @@ module.exports = async function(app, con) {
             !res.headersSent ? res.status(403).json({ msg: "Authorization denied" }) : 0;
             return;
         }
-        let queryString = (req.token === glob.myenv.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
+        let queryString = (req.token === process.env.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
         con.query(`SELECT ${queryString} FROM user WHERE id = "${req.params.id}" OR email = "${req.params.id}";`, function (err, rows) {
             if (err) res.status(500).json({ msg: "Internal server error" });
             if (rows[0])
@@ -76,7 +76,7 @@ module.exports = async function(app, con) {
         }
 
         if (ret === true) {
-            let queryString = (req.token === glob.myenv.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
+            let queryString = (req.token === process.env.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
             con.query(`SELECT ${queryString} FROM user WHERE id = "${req.params.id}";`, function (err, rows) {
                 if (err) res.status(500).json({ msg: "Internal server error" });
                 res.status(200).send(rows);

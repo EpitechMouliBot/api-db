@@ -1,6 +1,5 @@
-var glob = require('../../global');
-
-const SECRET = glob.myenv.SECRET;
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 function error_handling_login(req) {
     if(!req.body.hasOwnProperty('email')) {
@@ -25,8 +24,8 @@ module.exports = async function(app, con) {
             if (rows[0] === undefined) {
                 res.status(400).json({ msg: "Invalid Credentials" });
             } else {
-                if (glob.bcrypt.compareSync(req.body.password, rows[0].password)) {
-                    var token = glob.jwt.sign({ id: `${rows[0].id}` }, SECRET, { expiresIn: '24h' });
+                if (bcrypt.compareSync(req.body.password, rows[0].password)) {
+                    var token = jwt.sign({ id: `${rows[0].id}` }, process.env.SECRET, { expiresIn: '24h' });
                     res.status(201).json({token: token, id: rows[0].id});
                 } else
                     res.status(400).json({ msg: "Invalid Credentials" });
