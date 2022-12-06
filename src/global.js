@@ -1,23 +1,18 @@
-const bodyParser = require("body-parser");
 const dotenv = require('dotenv');
-const express = require("express");
+const express = require('express');
 const mysql = require('mysql2');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const env_conf = dotenv.config();
-if (env_conf.error) {
-    throw env_conf.error;
-}
-const myenv = env_conf.parsed;
-const SECRET = myenv.SECRET;
+dotenv.config();
+
+const SECRET = process.env.SECRET;
 const app = express();
-const port = myenv.PORT;
+const port = process.env.PORT;
 const con = mysql.createConnection({
-    host: myenv.MYSQL_HOST,
-    user: myenv.MYSQL_USER,
-    password: myenv.MYSQL_PASSWORD,
-    database: myenv.MYSQL_DATABASE
+    host: process.env.MYSQL_HOST,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE
 });
 
 function verifyToken(req, res, next) {
@@ -28,7 +23,7 @@ function verifyToken(req, res, next) {
         const bearerToken = bearer[1];
         req.token = bearerToken;
 
-        if (req.token === myenv.OTHER_APP_TOKEN) {
+        if (req.token === process.env.OTHER_APP_TOKEN) {
             next();
             return;
         }
@@ -60,7 +55,7 @@ function get_id_with_token(req, res) {
 }
 
 function verifyAuth(req, res, verifId) {
-    if (req.token === myenv.OTHER_APP_TOKEN)
+    if (req.token === process.env.OTHER_APP_TOKEN)
         return true;
 
     if (verifId) {
@@ -76,14 +71,9 @@ function is_num(id) {
     return (/^\d+$/.test(id));
 }
 
-exports.bodyParser = bodyParser;
-exports.myenv = myenv;
 exports.app = app;
 exports.port = port;
 exports.con = con;
-exports.bcrypt = bcrypt;
-exports.mysql = mysql;
-exports.jwt = jwt;
 exports.verifyToken = verifyToken;
 exports.verifyAuth = verifyAuth
 exports.is_num = is_num;

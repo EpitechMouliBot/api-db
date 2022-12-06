@@ -1,6 +1,5 @@
-var glob = require('../../global');
-
-const SECRET = glob.myenv.SECRET;
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 function checkEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -31,8 +30,8 @@ module.exports = async function(app, con) {
             res.status(400).json({ msg: "Bad parameter" });
             return (400);
         }
-        var salt = glob.bcrypt.genSaltSync(10);
-        var hash = glob.bcrypt.hashSync(req.body['password'], salt);
+        var salt = bcrypt.genSaltSync(10);
+        var hash = bcrypt.hashSync(req.body['password'], salt);
         con.query(`SELECT * FROM user WHERE email = "${req.body.email}";`, function (err, rows) {
             if (err) res.status(500).json({ msg: "Internal server error" });
             if (rows[0] != undefined) {
@@ -44,7 +43,7 @@ module.exports = async function(app, con) {
                 con.query(`SELECT * FROM user WHERE email = "${req.body.email}";`, function (err3, rows) {
                     if (err3) res.status(500).json({ msg: "Internal server error" });
                     if (rows != undefined && rows[0] != undefined) {
-                        var token = glob.jwt.sign({ id: `${rows[0].id}` }, SECRET, { expiresIn: '24h' });
+                        var token = jwt.sign({ id: `${rows[0].id}` }, process.env.SECRET, { expiresIn: '24h' });
                         res.status(201).json({token: token, id: rows[0].id});
                     } else
                         res.status(400);
