@@ -76,7 +76,7 @@ module.exports = async function(app, con) {
         }
 
         if (ret === true) {
-            let queryString = (req.token === glob.myenv.OTHER_APP_TOKEN) ? "*" : "id, email, password, user_id, channel_id, cookies_status, created_at";
+            let queryString = (req.token === glob.myenv.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
             con.query(`SELECT ${queryString} FROM user WHERE id = "${req.params.id}";`, function (err, rows) {
                 if (err) res.status(500).json({ msg: "Internal server error" });
                 res.status(200).send(rows);
