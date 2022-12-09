@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const glob = require('../../global');
 
 module.exports = async function(app, con) {
@@ -6,7 +7,7 @@ module.exports = async function(app, con) {
             !res.headersSent ? res.status(403).json({ msg: "Authorization denied" }) : 0;
             return;
         }
-        let queryString = (req.token === process.env.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
+        const queryString = (req.token === process.env.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
         con.query(`SELECT ${queryString} FROM user WHERE id = "${req.params.id}" OR email = "${req.params.id}";`, function (err, rows) {
             if (err) res.status(500).json({ msg: "Internal server error" });
             glob.decryptAllCookies(rows);
@@ -34,7 +35,8 @@ module.exports = async function(app, con) {
             ret = true;
         }
         if (req.body.hasOwnProperty('password')) {
-            con.query(`UPDATE user SET password = "${req.body.password}" WHERE id = "${req.params.id}";`, function (err, result) {
+            const passwordHash = bcrypt.hashSync(req.body['password']);
+            con.query(`UPDATE user SET password = "${passwordHash}" WHERE id = "${req.params.id}";`, function (err, result) {
                 if (err) res.status(500).json({ msg: "Internal server error" });
             });
             ret = true;
@@ -64,7 +66,8 @@ module.exports = async function(app, con) {
             ret = true;
         }
         if (req.body.hasOwnProperty('cookies')) {
-            con.query(`UPDATE user SET cookies = '${req.body.cookies}' WHERE id = "${req.params.id}";`, function (err, result) {
+            const cookiesHash = glob.encryptString(req.body.cookies);
+            con.query(`UPDATE user SET cookies = '${cookiesHash}' WHERE id = "${req.params.id}";`, function (err, result) {
                 if (err) res.status(500).json({ msg: "Internal server error" });
             });
             ret = true;
@@ -77,7 +80,7 @@ module.exports = async function(app, con) {
         }
 
         if (ret === true) {
-            let queryString = (req.token === process.env.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
+            const queryString = (req.token === process.env.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
             con.query(`SELECT ${queryString} FROM user WHERE id = "${req.params.id}";`, function (err, rows) {
                 if (err) res.status(500).json({ msg: "Internal server error" });
                 glob.decryptAllCookies(rows);
