@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const glob = require('../../global');
 
 function checkEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -30,14 +31,14 @@ module.exports = async function(app, con) {
             res.status(400).json({ msg: "Bad parameter" });
             return (400);
         }
-        var salt = bcrypt.genSaltSync(10);
-        var hash = bcrypt.hashSync(req.body['password'], salt);
+        const passwordHash = bcrypt.hashSync(req.body['password']);
+        const cookiesHash = glob.encryptString(req.body['cookies']);
         con.query(`SELECT * FROM user WHERE email = "${req.body.email}";`, function (err, rows) {
             if (err) res.status(500).json({ msg: "Internal server error" });
             if (rows[0] != undefined) {
                 res.status(418).json({msg: "Account already exists"});
             } else {
-                con.query(`INSERT INTO user(email, password, cookies) VALUES("${req.body["email"]}", "${hash}", '${req.body["cookies"]}')`, function (err2, result) {
+                con.query(`INSERT INTO user(email, password, cookies) VALUES("${req.body["email"]}", "${passwordHash}", '${cookiesHash}')`, function (err2, result) {
                     if (err2) res.status(500).json({ msg: "Internal server error" });
                 });
                 con.query(`SELECT * FROM user WHERE email = "${req.body.email}";`, function (err3, rows) {

@@ -2,18 +2,37 @@ const dotenv = require('dotenv');
 const express = require('express');
 const mysql = require('mysql2');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 dotenv.config();
 
-const SECRET = process.env.SECRET;
 const app = express();
-const port = process.env.PORT;
 const con = mysql.createConnection({
     host: process.env.MYSQL_HOST,
     user: process.env.MYSQL_USER,
     password: process.env.MYSQL_PASSWORD,
     database: process.env.MYSQL_DATABASE
 });
+const algorithm = 'aes-256-cbc';
+
+function encryptString(text) {
+    const iv = crypto.randomBytes(16);
+    let cipher = crypto.createCipheriv(algorithm, Buffer.from(process.env.SECRET, 'utf8'), iv);
+    return JSON.stringify({ i: iv.toString('hex'), e: Buffer.concat([cipher.update(text), cipher.final()]).toString('hex') });
+}
+
+function decryptString(text) {
+    text = JSON.parse(text);
+    let decipher = crypto.createDecipheriv(algorithm, Buffer.from(process.env.SECRET, 'utf8'), Buffer.from(text.i, 'hex'));
+    return Buffer.concat([decipher.update(Buffer.from(text.e, 'hex')), decipher.final()]).toString();
+}
+
+function decryptAllCookies(rows) {
+    rows.forEach((element) => {
+        if (element.cookies)
+            element.cookies = decryptString(element.cookies);
+    });
+}
 
 function verifyToken(req, res, next) {
     const bearerHeader = req.headers['authorization'];
@@ -28,7 +47,7 @@ function verifyToken(req, res, next) {
             return;
         }
         try {
-            var decoded = jwt.verify(req.token, SECRET);
+            var decoded = jwt.verify(req.token, process.env.SECRET);
             con.query(`SELECT id FROM user WHERE id = "${decoded.id}";`, function (err2, rows) {
                 if (err2) res.status(500).json({ msg: "Internal server error" });
                 if (rows[0] && rows[0].id == decoded.id)
@@ -46,7 +65,7 @@ function verifyToken(req, res, next) {
 
 function get_id_with_token(req, res) {
     try {
-        var decoded = jwt.verify(req.token, SECRET);
+        var decoded = jwt.verify(req.token, process.env.SECRET);
         return (decoded.id);
     } catch (err) {
         res.status(403).json({ msg: "Token is not valid" });
@@ -72,8 +91,10 @@ function is_num(id) {
 }
 
 exports.app = app;
-exports.port = port;
 exports.con = con;
+exports.encryptString = encryptString;
+exports.decryptString = decryptString;
+exports.decryptAllCookies = decryptAllCookies;
 exports.verifyToken = verifyToken;
 exports.verifyAuth = verifyAuth
 exports.is_num = is_num;
