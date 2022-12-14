@@ -1,8 +1,6 @@
-DROP DATABASE IF EXISTS moulibot;
-
-CREATE DATABASE moulibot;
-
-USE moulibot;
+DROP DATABASE IF EXISTS epitechmoulibot;
+CREATE DATABASE epitechmoulibot;
+USE epitechmoulibot;
 
 CREATE TABLE `user` (
     `id` INT unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -16,7 +14,3 @@ CREATE TABLE `user` (
     `cookies` LONGTEXT NOT NULL,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
-GRANT ALL ON moulibot.* to BOT@'%' IDENTIFIED BY 'password-bot';
-GRANT ALL ON moulibot.* to RELAY@'%' IDENTIFIED BY 'password-relay';
-GRANT ALL ON moulibot.* to APIDB@'%' IDENTIFIED BY 'password-api-db';
