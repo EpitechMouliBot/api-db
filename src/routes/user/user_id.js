@@ -1,12 +1,11 @@
 const bcrypt = require('bcryptjs');
 const glob = require('../../global');
-// const requestRelay = require('../../requestRelay');
 const axios = require('axios');
 
 async function executeRelayRequest(method, endpoint, body = {}) {
     const res = await axios({
         method: method,
-        url: process.env.API_RELAY_HOST + endpoint,
+        url: process.env.RELAY_HOST + endpoint,
         // headers: {
         //     "Authorization": "Bearer " + process.env.API_DB_TOKEN,
         // },
@@ -33,6 +32,7 @@ module.exports = async function(app, con) {
                 res.status(200).json({ msg: "Not found"});
         });
     });
+
     app.put("/user/id/:id", glob.verifyToken, async (req, res) => {
         if (!glob.is_num(req.params.id)) {
             res.status(400).json({ msg: "Bad parameter" });
@@ -42,21 +42,16 @@ module.exports = async function(app, con) {
             !res.headersSent ? res.status(403).json({ msg: "Authorization denied" }) : 0;
             return;
         }
-        console.log("0");
+
         var ret = false;
         if (req.body.hasOwnProperty('email')) {
-            console.log("0.1");
             con.query(`SELECT email FROM user WHERE id = ${req.params.id}`, function (err, rows) {
-                console.log("1");
                 if (err)
                     res.status(500).json({ msg: "Internal server error" })
                 else {
-                    console.log("1.1");
                     con.query(`UPDATE user SET email = "${req.body.email}", cookies_status = 'wait' WHERE id = "${req.params.id}";`, function (err, result) {
-                        console.log("2");
                         if (err) res.status(500).json({ msg: "Internal server error" });
                         if (rows[0]) {
-                            console.log("2.1");
                             executeRelayRequest('DELETE', `/account/delete/${rows[0].email}`);
                         }
                     });
