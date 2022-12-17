@@ -1,5 +1,20 @@
 const bcrypt = require('bcryptjs');
 const glob = require('../../global');
+const axios = require('axios');
+
+async function executeRelayRequest(method, endpoint, body = {}) {
+    const res = await axios({
+        method: method,
+        url: process.env.RELAY_HOST + endpoint,
+        // headers: {
+        //     "Authorization": "Bearer " + process.env.API_DB_TOKEN,
+        // },
+        data: body
+    }).catch(e => e.response);
+    if (res == undefined)
+        return (false);
+    return res;
+}
 
 module.exports = async function(app, con) {
     app.get("/user/id/:id", glob.verifyToken, async (req, res) => {
@@ -27,10 +42,20 @@ module.exports = async function(app, con) {
             !res.headersSent ? res.status(403).json({ msg: "Authorization denied" }) : 0;
             return;
         }
+
         var ret = false;
         if (req.body.hasOwnProperty('email')) {
-            con.query(`UPDATE user SET email = "${req.body.email}" WHERE id = "${req.params.id}";`, function (err, result) {
-                if (err) res.status(500).json({ msg: "Internal server error" });
+            con.query(`SELECT email FROM user WHERE id = ${req.params.id}`, function (err, rows) {
+                if (err)
+                    res.status(500).json({ msg: "Internal server error" })
+                else {
+                    con.query(`UPDATE user SET email = "${req.body.email}", cookies_status = 'wait' WHERE id = "${req.params.id}";`, function (err, result) {
+                        if (err) res.status(500).json({ msg: "Internal server error" });
+                        if (rows[0]) {
+                            executeRelayRequest('DELETE', `/account/delete/${rows[0].email}`);
+                        }
+                    });
+                }
             });
             ret = true;
         }
@@ -99,12 +124,18 @@ module.exports = async function(app, con) {
             !res.headersSent ? res.status(403).json({ msg: "Authorization denied" }) : 0;
             return;
         }
-        con.query(`DELETE FROM user WHERE id = "${req.params.id}";`, function (err, result) {
-            if (err) res.status(500).json({ msg: "Internal server error" });
-            if (result.affectedRows != 0)
-                res.status(200).json({ msg: `Successfully deleted record number: ${req.params.id}` });
-            else
-                res.status(200).json({ msg: "Not found"});
+        con.query(`SELECT email FROM user WHERE id = ${req.params.id}`, function (err, rows) {
+            if (err)
+                res.status(500).json({ msg: "Internal server error" })
+            else if (rows[0])
+                executeRelayRequest('DELETE', `/account/delete/${rows[0].email}`);
+            con.query(`DELETE FROM user WHERE id = "${req.params.id}";`, function (err, result) {
+                if (err) res.status(500).json({ msg: "Internal server error" });
+                if (result.affectedRows != 0)
+                    res.status(200).json({ msg: `Successfully deleted record number: ${req.params.id}` });
+                else
+                    res.status(200).json({ msg: "Not found"});
+            });
         });
     });
 }
