@@ -25,5 +25,5 @@ jobs:
         registry: docker.io
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        repository: epitechmoulibot/api-db:latest
+        repository: redboard/epitechmoulibot:latest
         tags: latest-${{ github.sha }}
