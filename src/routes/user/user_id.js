@@ -11,9 +11,44 @@ async function executeRelayRequest(method, endpoint, body = {}) {
         // },
         data: body
     }).catch(e => e.response);
-    if (res == undefined)
+    if (res === undefined)
         return (false);
     return res;
+}
+
+function addProperty(queryString, property, value) {
+    if (queryString.length > 0)
+        queryString += ", ";
+    queryString += `${property} = '${value}'`;
+    return queryString;
+}
+
+function getUpdateQueryString(req) {
+    let updateQueryString = "";
+
+    if (req.body.hasOwnProperty('password')) {
+        const passwordHash = bcrypt.hashSync(req.body.password);
+        updateQueryString = addProperty(updateQueryString, 'password', passwordHash);
+    }
+    if (req.body.hasOwnProperty('cookies')) {
+        const cookiesHash = glob.encryptString(req.body.cookies);
+        updateQueryString = addProperty(updateQueryString, 'cookies', cookiesHash);
+    }
+    if (req.body.hasOwnProperty('email')) {
+        updateQueryString = addProperty(updateQueryString, 'email', req.body.email);
+        updateQueryString = addProperty(updateQueryString, 'cookies_status', 'wait');
+    }
+    if (req.body.hasOwnProperty('cookies_status') && !req.body.hasOwnProperty('email'))
+        updateQueryString = addProperty(updateQueryString, 'cookies_status', req.body.cookies_status);
+    if (req.body.hasOwnProperty('user_id'))
+        updateQueryString = addProperty(updateQueryString, 'user_id', req.body.user_id);
+    if (req.body.hasOwnProperty('channel_id'))
+        updateQueryString = addProperty(updateQueryString, 'channel_id', req.body.channel_id);
+    if (req.body.hasOwnProperty('last_testRunId'))
+        updateQueryString = addProperty(updateQueryString, 'last_testRunId', req.body.last_testRunId);
+    if (req.body.hasOwnProperty('discord_status'))
+        updateQueryString = addProperty(updateQueryString, 'discord_status', req.body.discord_status);
+    return updateQueryString;
 }
 
 module.exports = async function(app, con) {
@@ -24,12 +59,13 @@ module.exports = async function(app, con) {
         }
         const queryString = (req.token === process.env.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
         con.query(`SELECT ${queryString} FROM user WHERE id = "${req.params.id}" OR email = "${req.params.id}";`, function (err, rows) {
-            if (err) res.status(500).json({ msg: "Internal server error" });
-            glob.decryptAllCookies(rows);
-            if (rows[0])
+            if (err)
+                res.status(500).json({ msg: "Internal server error" });
+            else if (rows[0]) {
+                glob.decryptAllCookies(rows);
                 res.send(rows[0]);
-            else
-                res.status(200).json({ msg: "Not found"});
+            } else
+                res.status(404);
         });
     });
 
@@ -43,76 +79,37 @@ module.exports = async function(app, con) {
             return;
         }
 
-        var ret = false;
-        if (req.body.hasOwnProperty('email')) {
-            con.query(`SELECT email FROM user WHERE id = ${req.params.id}`, function (err, rows) {
-                if (err)
-                    res.status(500).json({ msg: "Internal server error" })
-                else {
-                    con.query(`UPDATE user SET email = "${req.body.email}", cookies_status = 'wait' WHERE id = "${req.params.id}";`, function (err, result) {
-                        if (err) res.status(500).json({ msg: "Internal server error" });
-                        if (rows[0]) {
-                            executeRelayRequest('DELETE', `/account/delete/${rows[0].email}`);
-                        }
-                    });
-                }
-            });
-            ret = true;
-        }
-        if (req.body.hasOwnProperty('password')) {
-            const passwordHash = bcrypt.hashSync(req.body['password']);
-            con.query(`UPDATE user SET password = "${passwordHash}" WHERE id = "${req.params.id}";`, function (err, result) {
-                if (err) res.status(500).json({ msg: "Internal server error" });
-            });
-            ret = true;
-        }
-        if (req.body.hasOwnProperty('user_id')) {
-            con.query(`UPDATE user SET user_id = "${req.body.user_id}" WHERE id = "${req.params.id}";`, function (err, result) {
-                if (err) res.status(500).json({ msg: "Internal server error" });
-            });
-            ret = true;
-        }
-        if (req.body.hasOwnProperty('channel_id')) {
-            con.query(`UPDATE user SET channel_id = "${req.body.channel_id}" WHERE id = "${req.params.id}";`, function (err, result) {
-                if (err) res.status(500).json({ msg: "Internal server error" });
-            });
-            ret = true;
-        }
-        if (req.body.hasOwnProperty('last_testRunId')) {
-            con.query(`UPDATE user SET last_testRunId = "${req.body.last_testRunId}" WHERE id = "${req.params.id}";`, function (err, result) {
-                if (err) res.status(500).json({ msg: "Internal server error" });
-            });
-            ret = true;
-        }
-        if (req.body.hasOwnProperty('cookies_status')) {
-            con.query(`UPDATE user SET cookies_status = "${req.body.cookies_status}" WHERE id = "${req.params.id}";`, function (err, result) {
-                if (err) res.status(500).json({ msg: "Internal server error" });
-            });
-            ret = true;
-        }
-        if (req.body.hasOwnProperty('cookies')) {
-            const cookiesHash = glob.encryptString(req.body.cookies);
-            con.query(`UPDATE user SET cookies = '${cookiesHash}' WHERE id = "${req.params.id}";`, function (err, result) {
-                if (err) res.status(500).json({ msg: "Internal server error" });
-            });
-            ret = true;
-        }
-        if (req.body.hasOwnProperty('discord_status')) {
-            con.query(`UPDATE user SET discord_status = '${req.body.discord_status}' WHERE id = "${req.params.id}";`, function (err, result) {
-                if (err) res.status(500).json({ msg: "Internal server error" });
-            });
-            ret = true;
+        const updateQueryString = getUpdateQueryString(req);
+        if (updateQueryString.length === 0) {
+            res.status(400).json({ msg: "Bad parameter" });
+            return;
         }
 
-        if (ret === true) {
-            const queryString = (req.token === process.env.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
-            con.query(`SELECT ${queryString} FROM user WHERE id = "${req.params.id}";`, function (err, rows) {
-                if (err) res.status(500).json({ msg: "Internal server error" });
-                glob.decryptAllCookies(rows);
-                res.status(200).send(rows);
-            });
-        } else
-            res.status(400).json({ msg: "Bad parameter" });
+        con.query(`SELECT email FROM user WHERE id = ${req.params.id}`, (err1, oldRows) => {
+            if (err1)
+                res.status(500).json({ msg: "Internal server error" })
+            else if (oldRows[0]) {
+                con.query(`UPDATE user SET ${updateQueryString} WHERE id = "${req.params.id}";`, (err2, result) => {
+                    if (err2)
+                        res.status(500).json({ msg: "Internal server error" });
+                    else if (result.changedRows > 0) {
+                        const selectQueryString = (req.token === process.env.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
+                        con.query(`SELECT ${selectQueryString} FROM user WHERE id = "${req.params.id}";`, (err3, newRows) => {
+                            if (err3)
+                                res.status(500).json({ msg: "Internal server error" });
+                            else {
+                                if (req.body.hasOwnProperty('email'))
+                                    executeRelayRequest('DELETE', `/account/delete/${oldRows[0].email}`);
+                                glob.decryptAllCookies(newRows);
+                                res.status(200).send(newRows[0]);
+                            }
+                        });
+                    } else
+                        res.sendStatus(404);
+                });
+            } else
+                res.sendStatus(404);
+        });
     });
 
     app.delete("/user/id/:id", glob.verifyToken, async (req, res) => {
@@ -127,15 +124,17 @@ module.exports = async function(app, con) {
         con.query(`SELECT email FROM user WHERE id = ${req.params.id}`, function (err, rows) {
             if (err)
                 res.status(500).json({ msg: "Internal server error" })
-            else if (rows[0])
-                executeRelayRequest('DELETE', `/account/delete/${rows[0].email}`);
-            con.query(`DELETE FROM user WHERE id = "${req.params.id}";`, function (err, result) {
-                if (err) res.status(500).json({ msg: "Internal server error" });
-                if (result.affectedRows != 0)
-                    res.status(200).json({ msg: `Successfully deleted record number: ${req.params.id}` });
-                else
-                    res.status(200).json({ msg: "Not found"});
-            });
+            else {
+                con.query(`DELETE FROM user WHERE id = "${req.params.id}";`, function (err, result) {
+                    if (err)
+                        res.status(500).json({ msg: "Internal server error" });
+                    else if (rows[0] && result.affectedRows !== 0) {
+                        executeRelayRequest('DELETE', `/account/delete/${rows[0].email}`);
+                        res.status(200).json({ msg: `Successfully deleted record number: ${req.params.id}` });
+                    } else
+                        res.sendStatus(404);
+                });
+            }
         });
     });
 }
