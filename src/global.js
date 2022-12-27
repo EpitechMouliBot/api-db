@@ -47,7 +47,7 @@ function verifyToken(req, res, next) {
             return;
         }
         try {
-            var decoded = jwt.verify(req.token, process.env.SECRET);
+            let decoded = jwt.verify(req.token, process.env.SECRET);
             con.query(`SELECT id FROM user WHERE id = "${decoded.id}";`, function (err2, rows) {
                 if (err2) res.status(500).json({ msg: "Internal server error" });
                 if (rows[0] && rows[0].id == decoded.id)
@@ -65,7 +65,7 @@ function verifyToken(req, res, next) {
 
 function get_id_with_token(req, res) {
     try {
-        var decoded = jwt.verify(req.token, process.env.SECRET);
+        let decoded = jwt.verify(req.token, process.env.SECRET);
         return (decoded.id);
     } catch (err) {
         res.status(403).json({ msg: "Token is not valid" });
