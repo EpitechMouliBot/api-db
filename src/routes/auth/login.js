@@ -20,16 +20,15 @@ module.exports = async function(app, con) {
             return;
         }
         con.query(`SELECT * FROM user WHERE email = "${req.body.email}";`, function (err, rows) {
-            if (err) res.status(500).json({ msg: "Internal server error" });
-            if (rows[0] === undefined) {
+            if (err)
+                res.status(500).json({ msg: "Internal server error" });
+            else if (rows[0] === undefined)
                 res.status(400).json({ msg: "Invalid Credentials" });
-            } else {
-                if (bcrypt.compareSync(req.body.password, rows[0].password)) {
-                    let token = jwt.sign({ id: `${rows[0].id}` }, process.env.SECRET, { expiresIn: '40w' });
-                    res.status(201).json({token: token, id: rows[0].id});
-                } else
-                    res.status(400).json({ msg: "Invalid Credentials" });
-            }
+            else if (bcrypt.compareSync(req.body.password, rows[0].password)) {
+                let token = jwt.sign({ id: `${rows[0].id}` }, process.env.SECRET, { expiresIn: '40w' });
+                res.status(201).json({token: token, id: rows[0].id});
+            } else
+                res.status(400).json({ msg: "Invalid Credentials" });
         });
     });
 }

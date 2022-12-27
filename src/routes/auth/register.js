@@ -46,13 +46,11 @@ module.exports = async function(app, con) {
                         con.query(`SELECT * FROM user WHERE email = "${req.body.email}";`, function (err3, rows) {
                             if (err3)
                                 res.status(500).json({ msg: "Internal server error" });
-                            else {
-                                if (rows !== undefined && rows[0] !== undefined) {
-                                    let token = jwt.sign({ id: `${rows[0].id}` }, process.env.SECRET, { expiresIn: '40w' });
-                                    res.status(201).json({token: token, id: rows[0].id});
-                                } else
-                                    res.sendStatus(404);
-                            }
+                            else if (rows !== undefined && rows[0] !== undefined) {
+                                let token = jwt.sign({ id: `${rows[0].id}` }, process.env.SECRET, { expiresIn: '40w' });
+                                res.status(201).json({token: token, id: rows[0].id});
+                            } else
+                                res.sendStatus(404);
                         });
                     }
                 });
