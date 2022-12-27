@@ -27,6 +27,7 @@ function error_handling_register(req) {
 
 module.exports = async function(app, con) {
     app.post("/register", async (req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
         if (!error_handling_register(req)) {
             res.status(400).json({ msg: "Bad parameter" });
             return;
