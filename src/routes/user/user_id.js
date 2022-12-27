@@ -65,7 +65,7 @@ module.exports = async function(app, con) {
                 glob.decryptAllCookies(rows);
                 res.send(rows[0]);
             } else
-                res.status(404);
+                res.sendStatus(404);
         });
     });
 
