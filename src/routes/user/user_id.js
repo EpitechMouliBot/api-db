@@ -92,7 +92,7 @@ module.exports = async function(app, con) {
                 con.query(`UPDATE user SET ${updateQueryString} WHERE id = "${req.params.id}";`, (err2, result) => {
                     if (err2)
                         res.status(500).json({ msg: "Internal server error" });
-                    else if (result.changedRows > 0) {
+                    else if (result.affectedRows > 0) {
                         const selectQueryString = (req.token === process.env.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
                         con.query(`SELECT ${selectQueryString} FROM user WHERE id = "${req.params.id}";`, (err3, newRows) => {
                             if (err3)
