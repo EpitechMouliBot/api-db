@@ -1,6 +1,7 @@
-const glob = require('../../global');
+import * as glob from "../../global.js";
+import * as log from "nodejs-log-utils";
 
-module.exports = async function(app, con) {
+export default async function(app, con) {
     app.get("/user", glob.verifyToken, async (req, res) => {
         if (!glob.verifyAuth(req, res, false)) {
             !res.headersSent ? res.status(403).json({ msg: "Authorization denied" }) : 0;
@@ -8,9 +9,11 @@ module.exports = async function(app, con) {
         }
         const queryString = (req.token === process.env.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
         con.query(`SELECT ${queryString} FROM user;`, function (err, rows) {
-            if (err)
+            if (err) {
                 res.status(500).json({ msg: "Internal server error" });
-            else {
+                log.error("Internal server error");
+                log.debug(err, false);
+            } else {
                 glob.decryptAllCookies(rows);
                 res.send(rows);
             }
@@ -24,9 +27,11 @@ module.exports = async function(app, con) {
         }
         const queryString = (req.token === process.env.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
         con.query(`SELECT ${queryString} FROM user WHERE cookies_status = "${req.params.status}";`, function (err, rows) {
-            if (err)
+            if (err) {
                 res.status(500).json({ msg: "Internal server error" });
-            else {
+                log.error("Internal server error");
+                log.debug(err, false);
+            } else {
                 glob.decryptAllCookies(rows);
                 res.send(rows);
             }

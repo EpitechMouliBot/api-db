@@ -1,6 +1,7 @@
-const bcrypt = require('bcryptjs');
-const glob = require('../../global');
-const axios = require('axios');
+import bcrypt from "bcryptjs";
+import * as glob from "../../global.js";
+import axios from "axios";
+import * as log from "nodejs-log-utils";
 
 async function executeRelayRequest(method, endpoint, body = {}) {
     const res = await axios({
@@ -51,7 +52,7 @@ function getUpdateQueryString(req) {
     return updateQueryString;
 }
 
-module.exports = async function(app, con) {
+export default async function(app, con) {
     app.get("/user/id/:id", glob.verifyToken, async (req, res) => {
         if (!glob.verifyAuth(req, res, true)) {
             !res.headersSent ? res.status(403).json({ msg: "Authorization denied" }) : 0;
@@ -59,9 +60,11 @@ module.exports = async function(app, con) {
         }
         const queryString = (req.token === process.env.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
         con.query(`SELECT ${queryString} FROM user WHERE id = "${req.params.id}" OR email = "${req.params.id}";`, function (err, rows) {
-            if (err)
+            if (err) {
                 res.status(500).json({ msg: "Internal server error" });
-            else if (rows[0]) {
+                log.error("Internal server error");
+                log.debug(err, false);
+            } else if (rows[0]) {
                 glob.decryptAllCookies(rows);
                 res.send(rows[0]);
             } else
@@ -86,18 +89,24 @@ module.exports = async function(app, con) {
         }
 
         con.query(`SELECT email FROM user WHERE id = ${req.params.id}`, (err1, oldRows) => {
-            if (err1)
-                res.status(500).json({ msg: "Internal server error" })
-            else if (oldRows[0]) {
+            if (err1) {
+                res.status(500).json({ msg: "Internal server error" });
+                log.error("Internal server error");
+                log.debug(err1, false);
+            } else if (oldRows[0]) {
                 con.query(`UPDATE user SET ${updateQueryString} WHERE id = "${req.params.id}";`, (err2, result) => {
-                    if (err2)
+                    if (err2) {
                         res.status(500).json({ msg: "Internal server error" });
-                    else if (result.affectedRows > 0) {
+                        log.error("Internal server error");
+                        log.debug(err2, false);
+                    } else if (result.affectedRows > 0) {
                         const selectQueryString = (req.token === process.env.OTHER_APP_TOKEN) ? `*` : `id, email, user_id, channel_id, cookies_status, discord_status, created_at`;
                         con.query(`SELECT ${selectQueryString} FROM user WHERE id = "${req.params.id}";`, (err3, newRows) => {
-                            if (err3)
+                            if (err3) {
                                 res.status(500).json({ msg: "Internal server error" });
-                            else {
+                                log.error("Internal server error");
+                                log.debug(err3, false);
+                            } else {
                                 if (req.body.hasOwnProperty('email'))
                                     executeRelayRequest('DELETE', `/account/delete/${oldRows[0].email}`);
                                 glob.decryptAllCookies(newRows);
@@ -122,13 +131,17 @@ module.exports = async function(app, con) {
             return;
         }
         con.query(`SELECT email FROM user WHERE id = ${req.params.id}`, function (err, rows) {
-            if (err)
+            if (err) {
                 res.status(500).json({ msg: "Internal server error" })
-            else {
-                con.query(`DELETE FROM user WHERE id = "${req.params.id}";`, function (err, result) {
-                    if (err)
+                log.error("Internal server error");
+                log.debug(err, false);
+            } else {
+                con.query(`DELETE FROM user WHERE id = "${req.params.id}";`, function (err2, result) {
+                    if (err2) {
                         res.status(500).json({ msg: "Internal server error" });
-                    else if (rows[0] && result.affectedRows !== 0) {
+                        log.error("Internal server error");
+                        log.debug(err2, false);
+                    } else if (rows[0] && result.affectedRows !== 0) {
                         executeRelayRequest('DELETE', `/account/delete/${rows[0].email}`);
                         res.status(200).json({ msg: `Successfully deleted record number: ${req.params.id}` });
                     } else

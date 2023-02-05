@@ -1,13 +1,14 @@
-const dotenv = require('dotenv');
-const express = require('express');
-const mysql = require('mysql2');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
+import dotenv from "dotenv";
+import express from "express";
+import mysql from "mysql2";
+import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import * as log from 'nodejs-log-utils';
 
 dotenv.config();
 
-const app = express();
-const con = mysql.createConnection({
+export const app = express();
+export const con = mysql.createConnection({
     host: process.env.MYSQL_HOST,
     user: process.env.MYSQL_USER,
     password: process.env.MYSQL_PASSWORD,
@@ -15,26 +16,26 @@ const con = mysql.createConnection({
 });
 const algorithm = 'aes-256-cbc';
 
-function encryptString(text) {
+export function encryptString(text) {
     const iv = crypto.randomBytes(16);
     let cipher = crypto.createCipheriv(algorithm, Buffer.from(process.env.SECRET, 'utf8'), iv);
     return JSON.stringify({ i: iv.toString('hex'), e: Buffer.concat([cipher.update(text), cipher.final()]).toString('hex') });
 }
 
-function decryptString(text) {
+export function decryptString(text) {
     text = JSON.parse(text);
     let decipher = crypto.createDecipheriv(algorithm, Buffer.from(process.env.SECRET, 'utf8'), Buffer.from(text.i, 'hex'));
     return Buffer.concat([decipher.update(Buffer.from(text.e, 'hex')), decipher.final()]).toString();
 }
 
-function decryptAllCookies(rows) {
+export function decryptAllCookies(rows) {
     rows.forEach((element) => {
         if (element.cookies)
             element.cookies = decryptString(element.cookies);
     });
 }
 
-function verifyToken(req, res, next) {
+export function verifyToken(req, res, next) {
     const bearerHeader = req.headers['authorization'];
 
     if (typeof(bearerHeader) !== 'undefined') {
@@ -49,8 +50,11 @@ function verifyToken(req, res, next) {
         try {
             let decoded = jwt.verify(req.token, process.env.SECRET);
             con.query(`SELECT id FROM user WHERE id = "${decoded.id}";`, function (err2, rows) {
-                if (err2) res.status(500).json({ msg: "Internal server error" });
-                if (rows[0] && rows[0].id == decoded.id)
+                if (err2) {
+                    res.status(500).json({ msg: "Internal server error" });
+                    log.error("Internal server error");
+                    log.debug(err2, false);
+                } else if (rows[0] && rows[0].id == decoded.id)
                     next();
                 else
                     res.status(403).json({ msg: "Token is not valid" });
@@ -63,7 +67,7 @@ function verifyToken(req, res, next) {
     }
 }
 
-function get_id_with_token(req, res) {
+export function get_id_with_token(req, res) {
     try {
         let decoded = jwt.verify(req.token, process.env.SECRET);
         return (decoded.id);
@@ -73,7 +77,7 @@ function get_id_with_token(req, res) {
     return (-1);
 }
 
-function verifyAuth(req, res, verifId) {
+export function verifyAuth(req, res, verifId) {
     if (req.token === process.env.OTHER_APP_TOKEN)
         return true;
 
@@ -86,15 +90,6 @@ function verifyAuth(req, res, verifId) {
     return false;
 }
 
-function is_num(id) {
+export function is_num(id) {
     return (/^\d+$/.test(id));
 }
-
-exports.app = app;
-exports.con = con;
-exports.encryptString = encryptString;
-exports.decryptString = decryptString;
-exports.decryptAllCookies = decryptAllCookies;
-exports.verifyToken = verifyToken;
-exports.verifyAuth = verifyAuth
-exports.is_num = is_num;
